@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>VaxSafe AI Elite System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:'Segoe UI';
+    background:black;
+    color:#00ffe7;
+    text-align:center;
+    overflow-x:hidden;
+}
+h1{
+    margin-top:20px;
+    font-size:40px;
+    text-shadow:0 0 20px #00ffe7;
+}
+.dashboard{
+    display:flex;
+    justify-content:center;
+    gap:40px;
+    margin-top:40px;
+    flex-wrap:wrap;
+}
+.card{
+    width:260px;
+    height:220px;
+    border-radius:20px;
+    background:rgba(0,255,231,0.08);
+    border:1px solid #00ffe7;
+    box-shadow:0 0 25px #00ffe7;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    transition:0.6s;
+}
+.card:hover{
+    transform:rotateY(15deg) scale(1.05);
+}
+.value{
+    font-size:45px;
+    margin-top:10px;
+}
+.safe{border-color:#00ff99;}
+.warning{border-color:orange;}
+.critical{border-color:red; animation:blink 1s infinite;}
+@keyframes blink{
+    0%{box-shadow:0 0 10px red;}
+    50%{box-shadow:0 0 40px red;}
+    100%{box-shadow:0 0 10px red;}
+}
+#vaccineBox{
+    width:150px;
+    height:150px;
+    margin:30px auto;
+    background:#00ff99;
+    border-radius:10px;
+    box-shadow:0 0 30px #00ff99;
+    transition:0.5s;
+}
+.ai{
+    margin-top:20px;
+    font-size:22px;
+}
+.hash{
+    margin-top:15px;
+    font-size:14px;
+}
+button{
+    margin-top:20px;
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    background:#00ffe7;
+    cursor:pointer;
+}
+canvas{
+    margin-top:40px;
+    max-width:800px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>VaxSafe AI + Blockchain Elite</h1>
+
+<div id="vaccineBox"></div>
+
+<div class="dashboard">
+    <div id="tempCard" class="card safe">
+        Temperature
+        <div id="temp" class="value">-- °C</div>
+    </div>
+
+    <div class="card">
+        Humidity
+        <div id="hum" class="value">-- %</div>
+    </div>
+
+    <div class="card">
+        Potency
+        <div id="potency" class="value">100 %</div>
+    </div>
+</div>
+
+<div class="ai" id="aiStatus">AI: Analyzing...</div>
+<div class="hash" id="hashDisplay">Hash: --</div>
+
+<button onclick="downloadReport()">Download Report</button>
+
+<canvas id="chart"></canvas>
+
+<audio id="alarm" loop>
+<source src="https://www.soundjay.com/buttons/beep-01a.mp3">
+</audio>
+
+<script>
+const AUTH_TOKEN="e6GmREw4L6j6PHk-Kh621o6MkQoogzqL";
+
+let potency=100;
+let tempHistory=[];
+let labels=[];
+let alarmActive=false;
+
+// Chart
+const ctx=document.getElementById('chart').getContext('2d');
+const chart=new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:labels,
+        datasets:[{
+            label:'Temperature',
+            data:tempHistory,
+            borderColor:'#00ffe7',
+            tension:0.3
+        }]
+    }
+});
+
+async function sha256(message){
+    const msgBuffer=new TextEncoder().encode(message);
+    const hashBuffer=await crypto.subtle.digest('SHA-256',msgBuffer);
+    const hashArray=Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function predictTrend(){
+    if(tempHistory.length<3) return "Stable";
+    let diff=tempHistory[tempHistory.length-1]-tempHistory[tempHistory.length-3];
+    if(diff>2) return "Rising Risk";
+    if(diff<-2) return "Cooling";
+    return "Stable";
+}
+
+function updateUI(temp){
+
+    let card=document.getElementById("tempCard");
+    let box=document.getElementById("vaccineBox");
+    let alarm=document.getElementById("alarm");
+
+    if(temp<=8){
+        card.className="card safe";
+        box.style.background="#00ff99";
+        box.style.boxShadow="0 0 30px #00ff99";
+        alarm.pause();
+        alarmActive=false;
+    }
+    else if(temp<=15){
+        card.className="card warning";
+        box.style.background="orange";
+        box.style.boxShadow="0 0 30px orange";
+        potency-=0.5;
+        alarm.pause();
+        alarmActive=false;
+    }
+    else{
+        card.className="card critical";
+        box.style.background="red";
+        box.style.boxShadow="0 0 30px red";
+        potency-=2;
+        if(!alarmActive){
+            alarm.play();
+            alarmActive=true;
+        }
+        document.body.style.background="#2b0000";
+    }
+
+    if(potency<0) potency=0;
+    document.getElementById("potency").innerText=potency.toFixed(1)+" %";
+
+    let trend=predictTrend();
+    document.getElementById("aiStatus").innerText=
+        "AI Status: "+trend;
+
+    sha256(temp+Date.now()).then(hash=>{
+        document.getElementById("hashDisplay").innerText="Hash: "+hash.substring(0,40);
+    });
+}
+
+function updateChart(temp){
+    if(tempHistory.length>20){
+        tempHistory.shift();
+        labels.shift();
+    }
+    tempHistory.push(temp);
+    labels.push(new Date().toLocaleTimeString());
+    chart.update();
+}
+
+function fetchData(){
+    fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&V0`)
+    .then(res=>res.text())
+    .then(temp=>{
+        let t=parseFloat(temp);
+        document.getElementById("temp").innerText=t+" °C";
+        updateUI(t);
+        updateChart(t);
+    });
+
+    fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&V1`)
+    .then(res=>res.text())
+    .then(h=>{
+        document.getElementById("hum").innerText=h+" %";
+    });
+}
+
+function downloadReport(){
+    let text=`
+VaxSafe Elite Report
+Time: ${new Date().toLocaleString()}
+Temperature: ${document.getElementById("temp").innerText}
+Humidity: ${document.getElementById("hum").innerText}
+Potency: ${document.getElementById("potency").innerText}
+AI: ${document.getElementById("aiStatus").innerText}
+    `;
+    let blob=new Blob([text],{type:"text/plain"});
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="VaxSafe_Report.txt";
+    a.click();
+}
+
+setInterval(fetchData,3000);
+fetchData();
+</script>
+
+</body>
+</html>
