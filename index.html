@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VaxSafe AI ColdChain Pro</title>
+<title>VaxSafe Cold Storage</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,7 +14,7 @@ overflow:hidden;
 font-family:Segoe UI;
 background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
 color:white;
-transition:0.5s;
+transition:0.4s;
 }
 
 #panel{
@@ -22,17 +22,17 @@ position:absolute;
 top:20px;
 left:20px;
 width:360px;
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.65);
 padding:20px;
 border-radius:20px;
 backdrop-filter:blur(15px);
-box-shadow:0 0 25px rgba(0,255,255,0.3);
+box-shadow:0 0 25px rgba(0,255,255,0.4);
 }
 
-h1{margin:0;font-size:22px;color:#00f5ff;}
-.data{margin-top:10px;font-size:18px;}
-#status{margin-top:15px;font-size:20px;font-weight:bold;}
-#aiMessage{margin-top:10px;font-size:14px;color:#00ffff;}
+h1{margin:0;color:#00f5ff;font-size:22px;}
+.data{margin-top:10px;font-size:17px;}
+#status{margin-top:12px;font-size:19px;font-weight:bold;}
+#ai{margin-top:8px;font-size:14px;color:#00ffff;}
 canvas{margin-top:15px;background:rgba(255,255,255,0.1);border-radius:10px;}
 
 .flash{
@@ -46,13 +46,13 @@ animation:flash 0.7s infinite;
 <body>
 
 <div id="panel">
-<h1>VaxSafe AI ColdChain Pro</h1>
+<h1>VaxSafe Cold Storage</h1>
 
 <div class="data">Temperature: <span id="temp">--</span> °C</div>
-<div class="data">Vaccine Age: <span id="age">--</span></div>
+<div class="data">Vaccine Age: <span id="age">--</span> days</div>
 <div class="data">Expiry in: <span id="expiry">--</span> days</div>
 <div id="status">Checking...</div>
-<div id="aiMessage"></div>
+<div id="ai"></div>
 
 <canvas id="graph" width="320" height="150"></canvas>
 </div>
@@ -62,10 +62,10 @@ animation:flash 0.7s infinite;
 </audio>
 
 <script>
-// ---------- THREE JS SCENE ----------
+// ---------- THREE JS ----------
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
-const renderer=new THREE.WebGLRenderer({alpha:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
 renderer.setSize(window.innerWidth,window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -73,67 +73,58 @@ const light=new THREE.PointLight(0xffffff,1);
 light.position.set(10,10,10);
 scene.add(light);
 
-// Glass vial
-const vialGeo=new THREE.CylinderGeometry(1,1,3,32);
-const vialMat=new THREE.MeshPhysicalMaterial({
-color:0x00ffff,
-transparent:true,
-opacity:0.6,
-roughness:0,
-metalness:0.1
-});
-const vial=new THREE.Mesh(vialGeo,vialMat);
-scene.add(vial);
+// -------- REAL VACCINE BOX --------
+const boxMaterial=new THREE.MeshStandardMaterial({color:0x00aaff});
+const boxBase=new THREE.Mesh(new THREE.BoxGeometry(3,2,2),boxMaterial);
+scene.add(boxBase);
 
-const capGeo=new THREE.CylinderGeometry(1.1,1.1,0.5,32);
-const capMat=new THREE.MeshStandardMaterial({color:0xffffff});
-const cap=new THREE.Mesh(capGeo,capMat);
-cap.position.y=1.75;
-scene.add(cap);
+// Lid
+const lid=new THREE.Mesh(new THREE.BoxGeometry(3,0.3,2),boxMaterial);
+lid.position.y=1.15;
+scene.add(lid);
 
-// Storage rack background
-for(let i=-5;i<=5;i+=2){
-let boxGeo=new THREE.BoxGeometry(0.5,0.5,0.5);
-let boxMat=new THREE.MeshStandardMaterial({color:0x0088ff});
-let box=new THREE.Mesh(boxGeo,boxMat);
-box.position.set(i,-2,-3);
-scene.add(box);
-}
+// Label
+const labelMaterial=new THREE.MeshStandardMaterial({color:0xffffff});
+const label=new THREE.Mesh(new THREE.BoxGeometry(2,1,0.05),labelMaterial);
+label.position.set(0,0,1.03);
+scene.add(label);
 
 // Smoke particles
 const smokeGeo=new THREE.BufferGeometry();
-const smokeCount=200;
+let particles=150;
 let positions=[];
-for(let i=0;i<smokeCount;i++){
+for(let i=0;i<particles;i++){
 positions.push((Math.random()-0.5)*2);
-positions.push(Math.random()*3);
+positions.push(Math.random()*2);
 positions.push((Math.random()-0.5)*2);
 }
 smokeGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-const smokeMat=new THREE.PointsMaterial({color:0xaaaaaa,size:0.05});
+const smokeMat=new THREE.PointsMaterial({color:0xaaaaaa,size:0.06});
 const smoke=new THREE.Points(smokeGeo,smokeMat);
 scene.add(smoke);
 
-camera.position.z=6;
+camera.position.z=7;
 
+// Animation
 function animate(){
 requestAnimationFrame(animate);
-vial.rotation.y+=0.01;
-cap.rotation.y+=0.01;
-smoke.rotation.y+=0.002;
+boxBase.rotation.y+=0.005;
+lid.rotation.y+=0.005;
+label.rotation.y+=0.005;
+smoke.rotation.y+=0.001;
 renderer.render(scene,camera);
 }
 animate();
 
-// ---------- GRAPH ----------
-const ctx=document.getElementById('graph');
+// -------- GRAPH --------
+const ctx=document.getElementById("graph");
 const chart=new Chart(ctx,{
-type:'line',
-data:{labels:[],datasets:[{label:'Temperature',data:[],borderColor:'cyan',borderWidth:2}]},
+type:"line",
+data:{labels:[],datasets:[{label:"Temperature",data:[],borderColor:"cyan"}]},
 options:{scales:{y:{min:-5,max:15}}}
 });
 
-// ---------- BLYNK ----------
+// -------- BLYNK --------
 const token="e6GmREw4L6j6PHk-Kh621o6MkQoogzqL";
 const pin="V0";
 let history=[];
@@ -160,45 +151,42 @@ chart.data.datasets[0].data.shift();
 }
 chart.update();
 
-const manufacture=new Date("2026-02-01");
-const today=new Date();
-let diff=Math.floor((today-manufacture)/(1000*60*60*24));
+const mfg=new Date("2026-02-01");
+let today=new Date();
+let diff=Math.floor((today-mfg)/(1000*60*60*24));
 document.getElementById("age").innerText=diff;
 document.getElementById("expiry").innerText=30-diff;
 
 let status=document.getElementById("status");
-let ai=document.getElementById("aiMessage");
+let ai=document.getElementById("ai");
 let alarm=document.getElementById("alarm");
-
-let avg=history.reduce((a,b)=>a+b,0)/history.length;
 
 if(temp<-2||temp>8){
 status.innerText="CRITICAL ALERT!";
 status.style.color="red";
-vialMat.color.set(0xff0000);
+boxMaterial.color.set(0xff0000);
 document.body.classList.add("flash");
 alarm.play();
-ai.innerText="AI: Temperature unsafe! Immediate action required.";
+lid.rotation.x=-0.5; // lid open
+ai.innerText="AI: Temperature unsafe! Cold chain broken.";
 }
 else if(temp<=0||temp>=7){
 status.innerText="Warning Zone";
 status.style.color="orange";
-vialMat.color.set(0xffaa00);
+boxMaterial.color.set(0xffaa00);
 document.body.classList.remove("flash");
 alarm.pause();
-ai.innerText="AI: Temperature drifting toward critical zone.";
+lid.rotation.x=-0.2;
+ai.innerText="AI: Temperature drifting to unsafe range.";
 }
 else{
 status.innerText="Temperature Safe";
 status.style.color="lightgreen";
-vialMat.color.set(0x00ffff);
+boxMaterial.color.set(0x00aaff);
 document.body.classList.remove("flash");
 alarm.pause();
-ai.innerText="AI: Cold chain stable and maintained.";
-}
-
-if(avg>7){
-ai.innerText+=" Trend shows rising pattern.";
+lid.rotation.x=0;
+ai.innerText="AI: Cold chain stable.";
 }
 }
 
