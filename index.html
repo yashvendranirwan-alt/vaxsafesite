@@ -2,321 +2,207 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VaxSafe AI Ultimate 3.0</title>
+<title>VaxSafe AI ColdChain Pro</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
---safe:#00ffcc;
---danger:#ff3b3b;
---glass:rgba(255,255,255,0.08);
-}
-
 body{
 margin:0;
-font-family:'Segoe UI',sans-serif;
-background:linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#000000);
-background-size:400% 400%;
-animation:gradientMove 10s ease infinite;
+overflow:hidden;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
 color:white;
-text-align:center;
 transition:0.5s;
 }
 
-@keyframes gradientMove{
-0%{background-position:0% 50%;}
-50%{background-position:100% 50%;}
-100%{background-position:0% 50%;}
-}
-
-.light{
-background:#f4f4f4;
-color:#111;
-}
-
-h1{
-margin-top:20px;
-font-size:2.4rem;
-background:linear-gradient(90deg,#00f5ff,#00ff99);
--webkit-background-clip:text;
-color:transparent;
-}
-
-.toggle{
+#panel{
 position:absolute;
-right:20px;
 top:20px;
-cursor:pointer;
-padding:8px 15px;
-border-radius:20px;
-background:var(--glass);
-backdrop-filter:blur(10px);
-}
-
-.scene{
-width:220px;
-height:220px;
-margin:40px auto;
-perspective:900px;
-}
-
-.box{
-width:160px;
-height:160px;
-position:relative;
-transform-style:preserve-3d;
-animation:rotate 8s linear infinite;
-}
-
-.face{
-position:absolute;
-width:160px;
-height:160px;
-background:linear-gradient(145deg,var(--safe),#00ff99);
-border:2px solid rgba(255,255,255,0.2);
-box-shadow:0 0 20px var(--safe);
-}
-
-.front{transform:translateZ(80px);}
-.back{transform:rotateY(180deg) translateZ(80px);}
-.right{transform:rotateY(90deg) translateZ(80px);}
-.left{transform:rotateY(-90deg) translateZ(80px);}
-.top{transform:rotateX(90deg) translateZ(80px);}
-.bottom{transform:rotateX(-90deg) translateZ(80px);}
-
-@keyframes rotate{
-from{transform:rotateX(-20deg) rotateY(0deg);}
-to{transform:rotateX(-20deg) rotateY(360deg);}
-}
-
-.dashboard{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:20px;
-margin-top:20px;
-}
-
-.card{
-background:var(--glass);
-backdrop-filter:blur(12px);
+left:20px;
+width:360px;
+background:rgba(0,0,0,0.6);
 padding:20px;
-width:220px;
 border-radius:20px;
-box-shadow:0 0 20px rgba(0,255,255,0.3);
+backdrop-filter:blur(15px);
+box-shadow:0 0 25px rgba(0,255,255,0.3);
 }
 
-.card p{
-font-size:1.5rem;
-margin:10px 0;
-}
+h1{margin:0;font-size:22px;color:#00f5ff;}
+.data{margin-top:10px;font-size:18px;}
+#status{margin-top:15px;font-size:20px;font-weight:bold;}
+#aiMessage{margin-top:10px;font-size:14px;color:#00ffff;}
+canvas{margin-top:15px;background:rgba(255,255,255,0.1);border-radius:10px;}
 
-.expired{
-color:var(--danger);
-font-weight:bold;
-font-size:1.4rem;
-animation:blink 1s infinite;
+.flash{
+animation:flash 0.7s infinite;
 }
-
-@keyframes blink{
-50%{opacity:0;}
-}
-
-.graph-container{
-width:85%;
-margin:40px auto;
-}
-
-button{
-padding:10px 20px;
-border:none;
-border-radius:20px;
-cursor:pointer;
-margin-top:20px;
-background:linear-gradient(90deg,#00f5ff,#00ff99);
-color:black;
-font-weight:bold;
-}
-
-.status{
-margin-top:20px;
-font-size:0.9rem;
-opacity:0.8;
+@keyframes flash{
+50%{background:red;}
 }
 </style>
 </head>
-
 <body>
 
-<div class="toggle" onclick="toggleMode()">Dark/Light</div>
+<div id="panel">
+<h1>VaxSafe AI ColdChain Pro</h1>
 
-<h1>VaxSafe AI Monitoring System</h1>
+<div class="data">Temperature: <span id="temp">--</span> °C</div>
+<div class="data">Vaccine Age: <span id="age">--</span></div>
+<div class="data">Expiry in: <span id="expiry">--</span> days</div>
+<div id="status">Checking...</div>
+<div id="aiMessage"></div>
 
-<div class="scene">
-<div class="box" id="vaccineBox">
-<div class="face front"></div>
-<div class="face back"></div>
-<div class="face right"></div>
-<div class="face left"></div>
-<div class="face top"></div>
-<div class="face bottom"></div>
-</div>
+<canvas id="graph" width="320" height="150"></canvas>
 </div>
 
-<div class="dashboard">
-
-<div class="card">
-Temperature
-<p id="temp">-- °C</p>
-</div>
-
-<div class="card">
-Potency
-<p id="potency">100 %</p>
-</div>
-
-<div class="card">
-Total Time
-<p id="totalTime">00:00:00</p>
-</div>
-
-<div class="card">
-Unsafe Time
-<p id="unsafeTime">00:00:00</p>
-</div>
-
-</div>
-
-<div id="expiredMessage"></div>
-
-<div class="graph-container">
-<canvas id="chart"></canvas>
-</div>
-
-<button onclick="downloadReport()">Download Report</button>
-
-<div class="status">
-AI Status: <span id="aiStatus">Stable</span><br>
-Blockchain Hash: <span id="hash">Generating...</span>
-</div>
-
-<audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+<audio id="alarm">
+<source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg">
+</audio>
 
 <script>
+// ---------- THREE JS SCENE ----------
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
+const renderer=new THREE.WebGLRenderer({alpha:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-const AUTH_TOKEN="e6GmREw4L6j6PHk-Kh621o6MkQoogzqL";
-const PIN="V0";
+const light=new THREE.PointLight(0xffffff,1);
+light.position.set(10,10,10);
+scene.add(light);
 
-let total=0;
-let unsafe=0;
-let potency=100;
-let expired=false;
-let alertPlayed=false;
-
-let temps=[];
-let labels=[];
-
-const ctx=document.getElementById("chart").getContext("2d");
-const chart=new Chart(ctx,{
-type:"line",
-data:{labels:labels,datasets:[{label:"Temperature",data:temps,borderWidth:3,tension:0.4}]},
-options:{responsive:true,scales:{y:{min:-5,max:30}}}
+// Glass vial
+const vialGeo=new THREE.CylinderGeometry(1,1,3,32);
+const vialMat=new THREE.MeshPhysicalMaterial({
+color:0x00ffff,
+transparent:true,
+opacity:0.6,
+roughness:0,
+metalness:0.1
 });
+const vial=new THREE.Mesh(vialGeo,vialMat);
+scene.add(vial);
 
-function formatTime(sec){
-let h=Math.floor(sec/3600);
-let m=Math.floor((sec%3600)/60);
-let s=sec%60;
-return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+const capGeo=new THREE.CylinderGeometry(1.1,1.1,0.5,32);
+const capMat=new THREE.MeshStandardMaterial({color:0xffffff});
+const cap=new THREE.Mesh(capGeo,capMat);
+cap.position.y=1.75;
+scene.add(cap);
+
+// Storage rack background
+for(let i=-5;i<=5;i+=2){
+let boxGeo=new THREE.BoxGeometry(0.5,0.5,0.5);
+let boxMat=new THREE.MeshStandardMaterial({color:0x0088ff});
+let box=new THREE.Mesh(boxGeo,boxMat);
+box.position.set(i,-2,-3);
+scene.add(box);
 }
 
-async function fetchTemp(){
-if(expired) return;
+// Smoke particles
+const smokeGeo=new THREE.BufferGeometry();
+const smokeCount=200;
+let positions=[];
+for(let i=0;i<smokeCount;i++){
+positions.push((Math.random()-0.5)*2);
+positions.push(Math.random()*3);
+positions.push((Math.random()-0.5)*2);
+}
+smokeGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+const smokeMat=new THREE.PointsMaterial({color:0xaaaaaa,size:0.05});
+const smoke=new THREE.Points(smokeGeo,smokeMat);
+scene.add(smoke);
 
-const r=await fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&${PIN}`);
-const temp=parseFloat(await r.text());
+camera.position.z=6;
 
-document.getElementById("temp").innerText=temp+" °C";
+function animate(){
+requestAnimationFrame(animate);
+vial.rotation.y+=0.01;
+cap.rotation.y+=0.01;
+smoke.rotation.y+=0.002;
+renderer.render(scene,camera);
+}
+animate();
 
-total+=5;
+// ---------- GRAPH ----------
+const ctx=document.getElementById('graph');
+const chart=new Chart(ctx,{
+type:'line',
+data:{labels:[],datasets:[{label:'Temperature',data:[],borderColor:'cyan',borderWidth:2}]},
+options:{scales:{y:{min:-5,max:15}}}
+});
+
+// ---------- BLYNK ----------
+const token="e6GmREw4L6j6PHk-Kh621o6MkQoogzqL";
+const pin="V0";
+let history=[];
+
+async function getTemp(){
+try{
+let res=await fetch(`https://blynk.cloud/external/api/get?token=${token}&${pin}`);
+let temp=parseFloat(await res.text());
+updateUI(temp);
+}catch(e){}
+}
+
+function updateUI(temp){
+document.getElementById("temp").innerText=temp;
+
+history.push(temp);
+if(history.length>10)history.shift();
+
+chart.data.labels.push("");
+chart.data.datasets[0].data.push(temp);
+if(chart.data.labels.length>15){
+chart.data.labels.shift();
+chart.data.datasets[0].data.shift();
+}
+chart.update();
+
+const manufacture=new Date("2026-02-01");
+const today=new Date();
+let diff=Math.floor((today-manufacture)/(1000*60*60*24));
+document.getElementById("age").innerText=diff;
+document.getElementById("expiry").innerText=30-diff;
+
+let status=document.getElementById("status");
+let ai=document.getElementById("aiMessage");
+let alarm=document.getElementById("alarm");
+
+let avg=history.reduce((a,b)=>a+b,0)/history.length;
 
 if(temp<-2||temp>8){
-unsafe+=5;
-potency-=2;
-document.getElementById("aiStatus").innerText="CRITICAL";
-updateBox(false);
-if(!alertPlayed){
-document.getElementById("alertSound").play();
-alertPlayed=true;
+status.innerText="CRITICAL ALERT!";
+status.style.color="red";
+vialMat.color.set(0xff0000);
+document.body.classList.add("flash");
+alarm.play();
+ai.innerText="AI: Temperature unsafe! Immediate action required.";
 }
-}else{
-document.getElementById("aiStatus").innerText="Stable";
-updateBox(true);
-alertPlayed=false;
+else if(temp<=0||temp>=7){
+status.innerText="Warning Zone";
+status.style.color="orange";
+vialMat.color.set(0xffaa00);
+document.body.classList.remove("flash");
+alarm.pause();
+ai.innerText="AI: Temperature drifting toward critical zone.";
 }
-
-if(potency<=0||unsafe>=300){
-expired=true;
-document.getElementById("expiredMessage").innerHTML="<div class='expired'>VACCINE EXPIRED</div>";
-document.getElementById("aiStatus").innerText="EXPIRED";
-updateBox(false);
-}
-
-if(potency<0) potency=0;
-
-document.getElementById("potency").innerText=potency+" %";
-document.getElementById("totalTime").innerText=formatTime(total);
-document.getElementById("unsafeTime").innerText=formatTime(unsafe);
-
-updateGraph(temp);
-generateHash(temp);
+else{
+status.innerText="Temperature Safe";
+status.style.color="lightgreen";
+vialMat.color.set(0x00ffff);
+document.body.classList.remove("flash");
+alarm.pause();
+ai.innerText="AI: Cold chain stable and maintained.";
 }
 
-function updateGraph(t){
-if(temps.length>20){temps.shift();labels.shift();}
-temps.push(t);
-labels.push(new Date().toLocaleTimeString());
-chart.update();
+if(avg>7){
+ai.innerText+=" Trend shows rising pattern.";
+}
 }
 
-function updateBox(safe){
-const faces=document.querySelectorAll(".face");
-faces.forEach(f=>{
-if(safe){
-f.style.background="linear-gradient(145deg,var(--safe),#00ff99)";
-f.style.boxShadow="0 0 20px var(--safe)";
-}else{
-f.style.background="linear-gradient(145deg,var(--danger),#990000)";
-f.style.boxShadow="0 0 25px var(--danger)";
-}
-});
-}
-
-async function generateHash(data){
-const msg=new TextEncoder().encode(data.toString());
-const buffer=await crypto.subtle.digest("SHA-256",msg);
-const hashArray=Array.from(new Uint8Array(buffer));
-const hashHex=hashArray.map(b=>b.toString(16).padStart(2,"0")).join("");
-document.getElementById("hash").innerText=hashHex;
-}
-
-function toggleMode(){
-document.body.classList.toggle("light");
-}
-
-function downloadReport(){
-let report=`VaxSafe Monitoring Report\n\nTemperature: ${document.getElementById("temp").innerText}\nPotency: ${potency}%\nTotal Time: ${formatTime(total)}\nUnsafe Time: ${formatTime(unsafe)}\nStatus: ${document.getElementById("aiStatus").innerText}`;
-let blob=new Blob([report],{type:"text/plain"});
-let link=document.createElement("a");
-link.href=URL.createObjectURL(blob);
-link.download="VaxSafe_Report.txt";
-link.click();
-}
-
-setInterval(fetchTemp,5000);
-fetchTemp();
-
+setInterval(getTemp,3000);
 </script>
 
 </body>
