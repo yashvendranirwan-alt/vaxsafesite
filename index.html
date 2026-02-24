@@ -2,254 +2,321 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VaxSafe AI Elite System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaxSafe AI Ultimate 3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 
 <style>
+:root{
+--safe:#00ffcc;
+--danger:#ff3b3b;
+--glass:rgba(255,255,255,0.08);
+}
+
 body{
-    margin:0;
-    font-family:'Segoe UI';
-    background:black;
-    color:#00ffe7;
-    text-align:center;
-    overflow-x:hidden;
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#000000);
+background-size:400% 400%;
+animation:gradientMove 10s ease infinite;
+color:white;
+text-align:center;
+transition:0.5s;
 }
+
+@keyframes gradientMove{
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+}
+
+.light{
+background:#f4f4f4;
+color:#111;
+}
+
 h1{
-    margin-top:20px;
-    font-size:40px;
-    text-shadow:0 0 20px #00ffe7;
+margin-top:20px;
+font-size:2.4rem;
+background:linear-gradient(90deg,#00f5ff,#00ff99);
+-webkit-background-clip:text;
+color:transparent;
 }
+
+.toggle{
+position:absolute;
+right:20px;
+top:20px;
+cursor:pointer;
+padding:8px 15px;
+border-radius:20px;
+background:var(--glass);
+backdrop-filter:blur(10px);
+}
+
+.scene{
+width:220px;
+height:220px;
+margin:40px auto;
+perspective:900px;
+}
+
+.box{
+width:160px;
+height:160px;
+position:relative;
+transform-style:preserve-3d;
+animation:rotate 8s linear infinite;
+}
+
+.face{
+position:absolute;
+width:160px;
+height:160px;
+background:linear-gradient(145deg,var(--safe),#00ff99);
+border:2px solid rgba(255,255,255,0.2);
+box-shadow:0 0 20px var(--safe);
+}
+
+.front{transform:translateZ(80px);}
+.back{transform:rotateY(180deg) translateZ(80px);}
+.right{transform:rotateY(90deg) translateZ(80px);}
+.left{transform:rotateY(-90deg) translateZ(80px);}
+.top{transform:rotateX(90deg) translateZ(80px);}
+.bottom{transform:rotateX(-90deg) translateZ(80px);}
+
+@keyframes rotate{
+from{transform:rotateX(-20deg) rotateY(0deg);}
+to{transform:rotateX(-20deg) rotateY(360deg);}
+}
+
 .dashboard{
-    display:flex;
-    justify-content:center;
-    gap:40px;
-    margin-top:40px;
-    flex-wrap:wrap;
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:20px;
+margin-top:20px;
 }
+
 .card{
-    width:260px;
-    height:220px;
-    border-radius:20px;
-    background:rgba(0,255,231,0.08);
-    border:1px solid #00ffe7;
-    box-shadow:0 0 25px #00ffe7;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    transition:0.6s;
+background:var(--glass);
+backdrop-filter:blur(12px);
+padding:20px;
+width:220px;
+border-radius:20px;
+box-shadow:0 0 20px rgba(0,255,255,0.3);
 }
-.card:hover{
-    transform:rotateY(15deg) scale(1.05);
+
+.card p{
+font-size:1.5rem;
+margin:10px 0;
 }
-.value{
-    font-size:45px;
-    margin-top:10px;
+
+.expired{
+color:var(--danger);
+font-weight:bold;
+font-size:1.4rem;
+animation:blink 1s infinite;
 }
-.safe{border-color:#00ff99;}
-.warning{border-color:orange;}
-.critical{border-color:red; animation:blink 1s infinite;}
+
 @keyframes blink{
-    0%{box-shadow:0 0 10px red;}
-    50%{box-shadow:0 0 40px red;}
-    100%{box-shadow:0 0 10px red;}
+50%{opacity:0;}
 }
-#vaccineBox{
-    width:150px;
-    height:150px;
-    margin:30px auto;
-    background:#00ff99;
-    border-radius:10px;
-    box-shadow:0 0 30px #00ff99;
-    transition:0.5s;
+
+.graph-container{
+width:85%;
+margin:40px auto;
 }
-.ai{
-    margin-top:20px;
-    font-size:22px;
-}
-.hash{
-    margin-top:15px;
-    font-size:14px;
-}
+
 button{
-    margin-top:20px;
-    padding:10px 20px;
-    border:none;
-    border-radius:10px;
-    background:#00ffe7;
-    cursor:pointer;
+padding:10px 20px;
+border:none;
+border-radius:20px;
+cursor:pointer;
+margin-top:20px;
+background:linear-gradient(90deg,#00f5ff,#00ff99);
+color:black;
+font-weight:bold;
 }
-canvas{
-    margin-top:40px;
-    max-width:800px;
+
+.status{
+margin-top:20px;
+font-size:0.9rem;
+opacity:0.8;
 }
 </style>
 </head>
 
 <body>
 
-<h1>VaxSafe AI + Blockchain Elite</h1>
+<div class="toggle" onclick="toggleMode()">Dark/Light</div>
 
-<div id="vaccineBox"></div>
+<h1>VaxSafe AI Monitoring System</h1>
 
-<div class="dashboard">
-    <div id="tempCard" class="card safe">
-        Temperature
-        <div id="temp" class="value">-- °C</div>
-    </div>
-
-    <div class="card">
-        Humidity
-        <div id="hum" class="value">-- %</div>
-    </div>
-
-    <div class="card">
-        Potency
-        <div id="potency" class="value">100 %</div>
-    </div>
+<div class="scene">
+<div class="box" id="vaccineBox">
+<div class="face front"></div>
+<div class="face back"></div>
+<div class="face right"></div>
+<div class="face left"></div>
+<div class="face top"></div>
+<div class="face bottom"></div>
+</div>
 </div>
 
-<div class="ai" id="aiStatus">AI: Analyzing...</div>
-<div class="hash" id="hashDisplay">Hash: --</div>
+<div class="dashboard">
+
+<div class="card">
+Temperature
+<p id="temp">-- °C</p>
+</div>
+
+<div class="card">
+Potency
+<p id="potency">100 %</p>
+</div>
+
+<div class="card">
+Total Time
+<p id="totalTime">00:00:00</p>
+</div>
+
+<div class="card">
+Unsafe Time
+<p id="unsafeTime">00:00:00</p>
+</div>
+
+</div>
+
+<div id="expiredMessage"></div>
+
+<div class="graph-container">
+<canvas id="chart"></canvas>
+</div>
 
 <button onclick="downloadReport()">Download Report</button>
 
-<canvas id="chart"></canvas>
+<div class="status">
+AI Status: <span id="aiStatus">Stable</span><br>
+Blockchain Hash: <span id="hash">Generating...</span>
+</div>
 
-<audio id="alarm" loop>
-<source src="https://www.soundjay.com/buttons/beep-01a.mp3">
-</audio>
+<audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
 
 <script>
+
 const AUTH_TOKEN="e6GmREw4L6j6PHk-Kh621o6MkQoogzqL";
+const PIN="V0";
 
+let total=0;
+let unsafe=0;
 let potency=100;
-let tempHistory=[];
-let labels=[];
-let alarmActive=false;
+let expired=false;
+let alertPlayed=false;
 
-// Chart
-const ctx=document.getElementById('chart').getContext('2d');
+let temps=[];
+let labels=[];
+
+const ctx=document.getElementById("chart").getContext("2d");
 const chart=new Chart(ctx,{
-    type:'line',
-    data:{
-        labels:labels,
-        datasets:[{
-            label:'Temperature',
-            data:tempHistory,
-            borderColor:'#00ffe7',
-            tension:0.3
-        }]
-    }
+type:"line",
+data:{labels:labels,datasets:[{label:"Temperature",data:temps,borderWidth:3,tension:0.4}]},
+options:{responsive:true,scales:{y:{min:-5,max:30}}}
 });
 
-async function sha256(message){
-    const msgBuffer=new TextEncoder().encode(message);
-    const hashBuffer=await crypto.subtle.digest('SHA-256',msgBuffer);
-    const hashArray=Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+function formatTime(sec){
+let h=Math.floor(sec/3600);
+let m=Math.floor((sec%3600)/60);
+let s=sec%60;
+return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
-function predictTrend(){
-    if(tempHistory.length<3) return "Stable";
-    let diff=tempHistory[tempHistory.length-1]-tempHistory[tempHistory.length-3];
-    if(diff>2) return "Rising Risk";
-    if(diff<-2) return "Cooling";
-    return "Stable";
+async function fetchTemp(){
+if(expired) return;
+
+const r=await fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&${PIN}`);
+const temp=parseFloat(await r.text());
+
+document.getElementById("temp").innerText=temp+" °C";
+
+total+=5;
+
+if(temp<-2||temp>8){
+unsafe+=5;
+potency-=2;
+document.getElementById("aiStatus").innerText="CRITICAL";
+updateBox(false);
+if(!alertPlayed){
+document.getElementById("alertSound").play();
+alertPlayed=true;
+}
+}else{
+document.getElementById("aiStatus").innerText="Stable";
+updateBox(true);
+alertPlayed=false;
 }
 
-function updateUI(temp){
-
-    let card=document.getElementById("tempCard");
-    let box=document.getElementById("vaccineBox");
-    let alarm=document.getElementById("alarm");
-
-    if(temp<=8){
-        card.className="card safe";
-        box.style.background="#00ff99";
-        box.style.boxShadow="0 0 30px #00ff99";
-        alarm.pause();
-        alarmActive=false;
-    }
-    else if(temp<=15){
-        card.className="card warning";
-        box.style.background="orange";
-        box.style.boxShadow="0 0 30px orange";
-        potency-=0.5;
-        alarm.pause();
-        alarmActive=false;
-    }
-    else{
-        card.className="card critical";
-        box.style.background="red";
-        box.style.boxShadow="0 0 30px red";
-        potency-=2;
-        if(!alarmActive){
-            alarm.play();
-            alarmActive=true;
-        }
-        document.body.style.background="#2b0000";
-    }
-
-    if(potency<0) potency=0;
-    document.getElementById("potency").innerText=potency.toFixed(1)+" %";
-
-    let trend=predictTrend();
-    document.getElementById("aiStatus").innerText=
-        "AI Status: "+trend;
-
-    sha256(temp+Date.now()).then(hash=>{
-        document.getElementById("hashDisplay").innerText="Hash: "+hash.substring(0,40);
-    });
+if(potency<=0||unsafe>=300){
+expired=true;
+document.getElementById("expiredMessage").innerHTML="<div class='expired'>VACCINE EXPIRED</div>";
+document.getElementById("aiStatus").innerText="EXPIRED";
+updateBox(false);
 }
 
-function updateChart(temp){
-    if(tempHistory.length>20){
-        tempHistory.shift();
-        labels.shift();
-    }
-    tempHistory.push(temp);
-    labels.push(new Date().toLocaleTimeString());
-    chart.update();
+if(potency<0) potency=0;
+
+document.getElementById("potency").innerText=potency+" %";
+document.getElementById("totalTime").innerText=formatTime(total);
+document.getElementById("unsafeTime").innerText=formatTime(unsafe);
+
+updateGraph(temp);
+generateHash(temp);
 }
 
-function fetchData(){
-    fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&V0`)
-    .then(res=>res.text())
-    .then(temp=>{
-        let t=parseFloat(temp);
-        document.getElementById("temp").innerText=t+" °C";
-        updateUI(t);
-        updateChart(t);
-    });
+function updateGraph(t){
+if(temps.length>20){temps.shift();labels.shift();}
+temps.push(t);
+labels.push(new Date().toLocaleTimeString());
+chart.update();
+}
 
-    fetch(`https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}&V1`)
-    .then(res=>res.text())
-    .then(h=>{
-        document.getElementById("hum").innerText=h+" %";
-    });
+function updateBox(safe){
+const faces=document.querySelectorAll(".face");
+faces.forEach(f=>{
+if(safe){
+f.style.background="linear-gradient(145deg,var(--safe),#00ff99)";
+f.style.boxShadow="0 0 20px var(--safe)";
+}else{
+f.style.background="linear-gradient(145deg,var(--danger),#990000)";
+f.style.boxShadow="0 0 25px var(--danger)";
+}
+});
+}
+
+async function generateHash(data){
+const msg=new TextEncoder().encode(data.toString());
+const buffer=await crypto.subtle.digest("SHA-256",msg);
+const hashArray=Array.from(new Uint8Array(buffer));
+const hashHex=hashArray.map(b=>b.toString(16).padStart(2,"0")).join("");
+document.getElementById("hash").innerText=hashHex;
+}
+
+function toggleMode(){
+document.body.classList.toggle("light");
 }
 
 function downloadReport(){
-    let text=`
-VaxSafe Elite Report
-Time: ${new Date().toLocaleString()}
-Temperature: ${document.getElementById("temp").innerText}
-Humidity: ${document.getElementById("hum").innerText}
-Potency: ${document.getElementById("potency").innerText}
-AI: ${document.getElementById("aiStatus").innerText}
-    `;
-    let blob=new Blob([text],{type:"text/plain"});
-    let a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download="VaxSafe_Report.txt";
-    a.click();
+let report=`VaxSafe Monitoring Report\n\nTemperature: ${document.getElementById("temp").innerText}\nPotency: ${potency}%\nTotal Time: ${formatTime(total)}\nUnsafe Time: ${formatTime(unsafe)}\nStatus: ${document.getElementById("aiStatus").innerText}`;
+let blob=new Blob([report],{type:"text/plain"});
+let link=document.createElement("a");
+link.href=URL.createObjectURL(blob);
+link.download="VaxSafe_Report.txt";
+link.click();
 }
 
-setInterval(fetchData,3000);
-fetchData();
+setInterval(fetchTemp,5000);
+fetchTemp();
+
 </script>
 
 </body>
